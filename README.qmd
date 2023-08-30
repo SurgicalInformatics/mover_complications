@@ -1,0 +1,57 @@
+---
+title: "MOVER dataset: EPIC complications"
+format: gfm
+editor: visual
+execute:
+  echo: true
+  warning: false
+---
+
+```{r}
+library(tidyverse)
+theme_set(theme_bw())
+source("01_read_clean.R")
+```
+
+
+The post-operative complications dataset includes `r n_distinct(complications_orig$MRN)` patients who had `r n_distinct(complications_orig$LOG_ID)` surgeries.
+
+The whole dataset includes 39685 patients who had 64354 surgeries, a discrepancy of 140 surgeries. Which is small considering the overall size. I wonder if these patients could have died without a recorded complication?
+
+# Number of surgeries that resulted in any complication
+
+```{r}
+complications %>% 
+  count(any_complication, name = "n_patients") %>% 
+  knitr::kable()
+```
+
+# Number of complications per surgery
+
+```{r}
+complications %>% 
+  count(n_complications, name = "n_patients") %>% 
+  knitr::kable()
+```
+
+# Types of complications
+
+```{r}
+complications_all %>% 
+  filter(comp_abbr != "None") %>% 
+  #filter(comp_abbr != "Post-op AN") %>% 
+  ggplot(aes(y = fct_rev(fct_infreq(comp_abbr)))) +
+  geom_bar() +
+  facet_wrap(~if_else(comp_abbr == "Post-op AN", "Big x axis scale", "Small x axis scale"),
+             scales = "free", ncol = 1)
+```
+
+By far the most common complication is "AN Post-op Complications", which I've shortened to "Post-op AN" for plotting/brevity purposes. It seems to cover everything from "None" to "Death":
+
+```{r}
+complications_all %>% 
+  filter(comp_abbr == "Post-op AN") %>% 
+  count(comp_abbr, complication, sort = TRUE) %>%
+  slice(1:20) %>% 
+  knitr::kable()
+```
